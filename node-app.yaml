@@ -1,0 +1,57 @@
+---
+- name: install node and npm
+  hosts: 13.38.117.239
+  become: yes
+  tasks:
+    - name: update apt repo and cache
+      apt:
+        update_cache=yes 
+        force_apt_get=yes 
+    - name: Install npm and node on the server
+      apt:
+        pkg:
+          - nodejs
+          - npm
+
+- name: Deploy and install dependencies
+  hosts: 13.38.117.239
+  # become: yes
+  tasks:
+    - name: copy the artifact to the server
+      copy:
+        src: ./nodejs-app-1.0.0.tgz
+        dest: /home/ubuntu/app.tgz 
+
+    - name: Extract the nodejs app
+      unarchive:
+        src: /home/ubuntu/app.tgz
+        dest: /home/ubuntu/
+        remote_src: yes    
+
+    - name: install dependencies
+      npm:
+        path: /home/ubuntu/package
+
+    - name: run app in detached mode
+      shell: nohup node /home/ubuntu/package/app/server.js > /dev/null 2>&1 &
+      args:
+        chdir: /home/ubuntu/package/app
+
+    - name: Wait for the application to start
+      wait_for:
+        host: 13.38.117.239
+        port: 3000
+        delay: 5
+        timeout: 30
+        state: started
+
+    - name: Verify the application is running
+      uri:
+        url: http://13.38.117.239:3000
+        status_code: 200
+      register: result
+
+    - name: Debug application response
+      debug:
+        var: result
+

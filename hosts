@@ -1,0 +1,1 @@
+13.38.117.239 ansible_ssh_private_key_file=docker-server.pem ansible_user=ubuntu
